@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlantControl - Painel Interativo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: #f4f6f9;
+      color: #1f2937;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 430px;
+      background-color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding-bottom: 70px;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 20px;
+      flex: 1;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .brand h1 {
+      color: #1a56db;
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    .brand-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #4b5563;
+      margin-top: 2px;
+    }
+
+    .dot-connected {
+      width: 8px;
+      height: 8px;
+      background-color: #10b981;
+      border-radius: 50%;
+    }
+
+    .badge-auto {
+      border: 1px solid #10b981;
+      color: #10b981;
+      background-color: #f0fdf4;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .card.clickable {
+      cursor: pointer;
+    }
+
+    .card.clickable:hover {
+      border-color: #bfdbfe;
+    }
+
+    .humidity-card {
+      text-align: center;
+    }
+
+    .humidity-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 8px;
+      fill: #2563eb;
+      transition: fill 0.3s, transform 0.3s;
+    }
+
+    .card-title {
+      font-size: 14px;
+      color: #4b5563;
+      font-weight: 600;
+    }
+
+    .humidity-value {
+      font-size: 44px;
+      font-weight: 800;
+      color: #1a56db;
+      margin: 4px 0;
+      transition: color 0.3s;
+    }
+
+    .status-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      transition: all 0.3s;
+    }
+
+    .status-check.ok {
+      color: #047857;
+      background-color: #ecfdf5;
+    }
+
+    .status-check.low {
+      color: #b45309;
+      background-color: #fffbeb;
+    }
+
+    .status-check.flooded {
+      color: #dc2626;
+      background-color: #fef2f2;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .range-box {
+      background-color: #f9fafb;
+      border-radius: 12px;
+      padding: 14px 12px;
+      border: 1px solid #f3f4f6;
+    }
+
+    .range-title {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .slider-container {
+      position: relative;
+      width: 100%;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .range-track-bg {
+      position: absolute;
+      width: 100%;
+      height: 8px;
+      background-color: #e5e7eb;
+      border-radius: 4px;
+      z-index: 1;
+    }
+
+    .range-track-highlight {
+      position: absolute;
+      height: 8px;
+      border-radius: 4px;
+      background-color: #2563eb;
+      z-index: 2;
+      pointer-events: none;
+      transition: left 0.2s, width 0.2s;
+    }
+
+    .range-input {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      background: transparent;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+      z-index: 3;
+    }
+
+    .range-input::-webkit-slider-runnable-track {
+      background: transparent;
+    }
+
+    .range-input::-moz-range-track {
+      background: transparent;
+    }
+
+    .range-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      cursor: grab;
+      margin-top: -7px;
+      transition: transform 0.1s;
+    }
+
+    .range-input::-webkit-slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.15);
+    }
+
+    .range-input::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      cursor: grab;
+    }
+
+    .range-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #6b7280;
+      font-weight: 700;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .grid-card {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .grid-card-icon {
+      margin: 6px 0;
+      transition: transform 0.3s;
+    }
+
+    .grid-card:hover .grid-card-icon {
+      transform: scale(1.05);
+    }
+
+    .status-text-green {
+      color: #10b981;
+      font-weight: 700;
+      font-size: 15px;
+      margin-top: 4px;
+    }
+
+    .status-text-red {
+      color: #ef4444;
+      font-weight: 700;
+      font-size: 15px;
+      margin-top: 4px;
+    }
+
+    .status-text-blue {
+      color: #2563eb;
+      font-weight: 700;
+      font-size: 15px;
+      margin-top: 4px;
+    }
+
+    .subtext {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .click-hint {
+      font-size: 9px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .plant-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .plant-details {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .plant-img {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: #ecfdf5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .plant-name {
+      font-weight: 700;
+      font-size: 16px;
+      color: #1f2937;
+    }
+
+    .plant-latin {
+      font-size: 12px;
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .btn-outline {
+      border: 1px solid #2563eb;
+      background: transparent;
+      color: #2563eb;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-outline:hover {
+      background: #eff6ff;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: #0066ff;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: #0052cc;
+    }
+
+    .btn-secondary {
+      width: 100%;
+      background: white;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+      padding: 10px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #fef2f2;
+    }
+
+    .security-note {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .catalog-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .catalog-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .catalog-meta {
+      font-size: 11px;
+      color: #2563eb;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .log-item, .alert-item {
+      padding: 10px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 13px;
+    }
+
+    .alert-item.danger {
+      color: #dc2626;
+      font-weight: 600;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      max-width: 430px;
+      height: 60px;
+      background: #ffffff;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #6b7280;
+      font-size: 11px;
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    .nav-item.active {
+      color: #2563eb;
+      font-weight: 600;
+    }
+
+    .nav-item svg {
+      width: 20px;
+      height: 20px;
+      margin-bottom: 2px;
+      fill: currentColor;
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <main id="tab-inicio" class="tab-content active">
+      <header class="header">
+        <div class="brand">
+          <h1>PlantControl</h1>
+          <div class="brand-status">
+            <span class="dot-connected"></span>
+            <span>ESP32 Conectado</span>
+          </div>
+        </div>
+        <div class="badge-auto" id="badge-mode">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          AUTOMÁTICO
+        </div>
+      </header>
+
+      <section class="card humidity-card">
+        <svg class="humidity-icon" id="humidity-svg" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        <div class="card-title">Umidade do solo (Arraste para testar)</div>
+        <div class="humidity-value" id="disp-humidity">52%</div>
+        
+        <div class="status-check ok" id="disp-status-badge">
+          <span>Umidade adequada</span>
+        </div>
+
+        <div class="range-box">
+          <div class="range-title">Faixa configurada: <span id="disp-range-text">40%–60%</span></div>
+          
+          <div class="slider-container">
+            <div class="range-track-bg"></div>
+            <div class="range-track-highlight" id="range-highlight"></div>
+            <input type="range" min="0" max="100" value="52" class="range-input" id="humidity-slider" oninput="onHumidityChange(this.value)">
+          </div>
+
+          <div class="range-labels">
+            <span>0%</span>
+            <span id="lbl-min">40% (Mín)</span>
+            <span id="lbl-max">60% (Máx)</span>
+            <span>100%</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid-2">
+        <div class="card grid-card clickable" onclick="toggleWater()" title="Clique para alterar disponibilidade de água">
+          <div class="card-title">Reservatório</div>
+          <div class="grid-card-icon">
+            <svg viewBox="0 0 64 64" width="48" height="48" fill="none">
+              <rect x="12" y="16" width="40" height="40" rx="4" id="res-bg" fill="#e0f2fe" stroke="#1d4ed8" stroke-width="2"/>
+              <path d="M12 28h40M12 40h40M25 16v40M39 16v40" stroke="#93c5fd" stroke-width="1.5"/>
+              <rect x="26" y="8" width="12" height="8" rx="2" fill="#1d4ed8"/>
+              <path id="res-water-level" d="M14 38c5-3 10 3 15 0s10-3 15 0 6-3 6-3v16H14V38z" fill="#3b82f6" opacity="0.8"/>
+            </svg>
+          </div>
+          <div class="status-text-green" id="disp-water-text">Com água</div>
+          <div class="subtext" id="disp-water-subtext">Disponível</div>
+          <div class="click-hint">Clique p/ alternar</div>
+        </div>
+
+        <div class="card grid-card">
+          <div class="card-title">Bomba</div>
+          <div class="grid-card-icon">
+            <svg viewBox="0 0 64 64" width="48" height="48" fill="none">
+              <rect x="26" y="20" width="26" height="24" rx="3" fill="#94a3b8" stroke="#475569" stroke-width="2"/>
+              <path d="M31 20v24M37 20v24M43 20v24" stroke="#cbd5e1" stroke-width="1.5"/>
+              <rect x="52" y="24" width="6" height="16" rx="2" fill="#334155"/>
+              <circle cx="18" cy="32" r="12" id="pump-body" fill="#94a3b8" stroke="#475569" stroke-width="2"/>
+              <circle cx="18" cy="32" r="4" fill="#ffffff"/>
+              <path d="M6 32h6M18 20v-6h6" stroke="#475569" stroke-width="3" stroke-linecap="round"/>
+              <path d="M10 48h44" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="status-text-red" id="disp-pump-text">Desligada</div>
+          <div class="subtext" id="disp-pump-subtext">Aguardando</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-title" style="margin-bottom: 10px;">Planta selecionada</div>
+        <div class="plant-info">
+          <div class="plant-details">
+            <div class="plant-img" id="disp-plant-icon">🍅</div>
+            <div>
+              <div class="plant-name" id="disp-plant-name">Tomate</div>
+              <div class="plant-latin" id="disp-plant-latin">Solanum lycopersicum</div>
+            </div>
+          </div>
+          <button class="btn-outline" onclick="switchTab('plantas')">Alterar</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-title" style="margin-bottom: 12px;">Controles Manuais & Emergência</div>
+        <button class="btn-primary" onclick="triggerManualIrrigation()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+          Iniciar irrigação manual (RF06)
+        </button>
+        <button class="btn-secondary" onclick="triggerEmergencyStop()">
+          ⚠ Parada de emergência (RF07 / RN07)
+        </button>
+        <div class="security-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Mecanismos de segurança e histerese ativos
+        </div>
+      </section>
+    </main>
+
+    <main id="tab-plantas" class="tab-content">
+      <h2 class="page-title">Catálogo de Plantas</h2>
+      <p style="font-size: 13px; color: #6b7280;">Escolha uma cultura para atualizar os limites mínimos e máximos automaticamente:</p>
+
+      <div class="catalog-list">
+        <div class="catalog-item">
+          <div class="plant-details">
+            <div class="plant-img">🍅</div>
+            <div>
+              <div class="plant-name">Tomate</div>
+              <div class="plant-latin">Solanum lycopersicum</div>
+              <div class="catalog-meta">Faixa Ideal: 40% - 60%</div>
+            </div>
+          </div>
+          <button class="btn-outline" onclick="selectPlant('Tomate', 'Solanum lycopersicum', '🍅', 40, 60)">Selecionar</button>
+        </div>
+
+        <div class="catalog-item">
+          <div class="plant-details">
+            <div class="plant-img">🌸</div>
+            <div>
+              <div class="plant-name">Orquídea</div>
+              <div class="plant-latin">Orchidaceae</div>
+              <div class="catalog-meta">Faixa Ideal: 30% - 50%</div>
+            </div>
+          </div>
+          <button class="btn-outline" onclick="selectPlant('Orquídea', 'Orchidaceae', '🌸', 30, 50)">Selecionar</button>
+        </div>
+
+        <div class="catalog-item">
+          <div class="plant-details">
+            <div class="plant-img">🌿</div>
+            <div>
+              <div class="plant-name">Samambaia</div>
+              <div class="plant-latin">Nephrolepis exaltata</div>
+              <div class="catalog-meta">Faixa Ideal: 60% - 80%</div>
+            </div>
+          </div>
+          <button class="btn-outline" onclick="selectPlant('Samambaia', 'Nephrolepis exaltata', '🌿', 60, 80)">Selecionar</button>
+        </div>
+
+        <div class="catalog-item">
+          <div class="plant-details">
+            <div class="plant-img">🌵</div>
+            <div>
+              <div class="plant-name">Suculenta</div>
+              <div class="plant-latin">Echeveria elegans</div>
+              <div class="catalog-meta">Faixa Ideal: 15% - 30%</div>
+            </div>
+          </div>
+          <button class="btn-outline" onclick="selectPlant('Suculenta', 'Echeveria elegans', '🌵', 15, 30)">Selecionar</button>
+        </div>
+      </div>
+    </main>
+
+    <main id="tab-historico" class="tab-content">
+      <h2 class="page-title">Histórico de Eventos</h2>
+      <div class="card" id="history-list">
+        <div class="log-item">
+          <strong>10:42</strong> - Sistema inicializado e pronto.
+        </div>
+      </div>
+    </main>
+
+    <main id="tab-alertas" class="tab-content">
+      <h2 class="page-title">Alertas e Regras de Negócio</h2>
+      <div class="card">
+        <div class="alert-item danger">
+          ⚠ <strong>RN06 / RF05:</strong> Falta de água bloqueia o acionamento da bomba.
+        </div>
+        <div class="alert-item">
+          ℹ <strong>RN10:</strong> Histerese impede acionamentos repetitivos na transição.
+        </div>
+        <div class="alert-item">
+          ⚡ <strong>RNF01:</strong> Desligamento de emergência responde em menos de 2s.
+        </div>
+        <div class="alert-item danger" id="active-alert-status">
+          ✓ NENHUM ALERTA CRÍTICO ATIVO NO MOMENTO.
+        </div>
+      </div>
+    </main>
+
+    <main id="tab-ajustes" class="tab-content">
+      <h2 class="page-title">Ajustes do ESP32</h2>
+      <div class="card">
+        <div class="card-title" style="margin-bottom: 10px;">Limites Personalizados de Umidade</div>
+        <label style="font-size: 12px; color: #6b7280;">Limite Mínimo para acionar (%):</label>
+        <input type="number" id="input-min" value="40" min="5" max="90" style="width: 100%; padding: 8px; margin: 6px 0 12px; border: 1px solid #ccc; border-radius: 6px;">
+        
+        <label style="font-size: 12px; color: #6b7280;">Limite Máximo para desligar (%):</label>
+        <input type="number" id="input-max" value="60" min="10" max="95" style="width: 100%; padding: 8px; margin: 6px 0 12px; border: 1px solid #ccc; border-radius: 6px;">
+
+        <button class="btn-primary" onclick="saveSettings()">Salvar no ESP32</button>
+      </div>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" onclick="switchTab('inicio')">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        Início
+      </button>
+      <button class="nav-item" onclick="switchTab('plantas')">
+        <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.21 19.58 10.56 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>
+        Plantas
+      </button>
+      <button class="nav-item" onclick="switchTab('historico')">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+        Histórico
+      </button>
+      <button class="nav-item" onclick="switchTab('alertas')">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        Alertas
+      </button>
+      <button class="nav-item" onclick="switchTab('ajustes')">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        Ajustes
+      </button>
+    </nav>
+
+  </div>
+
+  <script>
+    let system = {
+      humidity: 52,
+      minLimit: 40,
+      maxLimit: 60,
+      hasWater: true,
+      pumpActive: false,
+      isEmergency: false
+    };
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+
+      document.getElementById('tab-' + tabId).classList.add('active');
+      
+      const navButtons = document.querySelectorAll('.nav-item');
+      const tabs = ['inicio', 'plantas', 'historico', 'alertas', 'ajustes'];
+      const index = tabs.indexOf(tabId);
+      if (index !== -1 && navButtons[index]) {
+        navButtons[index].classList.add('active');
+      }
+    }
+
+    function onHumidityChange(val) {
+      system.humidity = parseInt(val);
+      evaluateSystemState();
+    }
+
+    function toggleWater() {
+      system.hasWater = !system.hasWater;
+      addLog(system.hasWater ? "Água detectada no reservatório" : "⚠ ATENÇÃO: Reservatório sem água!");
+      evaluateSystemState();
+    }
+
+    function triggerManualIrrigation() {
+      if (!system.hasWater) {
+        alert("RN06: Irrigação bloqueada! Não há água no reservatório.");
+        return;
+      }
+      system.pumpActive = true;
+      system.isEmergency = false;
+      addLog("Irrigação manual iniciada pelo usuário.");
+      updateUI();
+    }
+
+    function triggerEmergencyStop() {
+      system.pumpActive = false;
+      system.isEmergency = true;
+      addLog("⚠ PARADA DE EMERGÊNCIA ACIONADA!");
+      updateUI();
+    }
+
+    function selectPlant(name, latin, icon, min, max) {
+      system.minLimit = min;
+      system.maxLimit = max;
+      document.getElementById('disp-plant-name').innerText = name;
+      document.getElementById('disp-plant-latin').innerText = latin;
+      document.getElementById('disp-plant-icon').innerText = icon;
+      document.getElementById('input-min').value = min;
+      document.getElementById('input-max').value = max;
+      
+      addLog(`Planta ${name} selecionada. Limites: ${min}% - ${max}%`);
+      evaluateSystemState();
+      switchTab('inicio');
+    }
+
+    function saveSettings() {
+      const min = parseInt(document.getElementById('input-min').value);
+      const max = parseInt(document.getElementById('input-max').value);
+      
+      if (min >= max) {
+        alert("O limite mínimo deve ser menor que o limite máximo!");
+        return;
+      }
+
+      system.minLimit = min;
+      system.maxLimit = max;
+      addLog(`Parâmetros alterados manualmente: ${min}% a ${max}%`);
+      evaluateSystemState();
+      alert("Parâmetros salvos com sucesso no ESP32!");
+    }
+
+    function evaluateSystemState() {
+      if (system.isEmergency) {
+        system.pumpActive = false;
+      }
+
+      if (!system.hasWater) {
+        if (system.pumpActive) {
+          addLog("RN06: Irrigação interrompida por falta de água!");
+        }
+        system.pumpActive = false;
+      } else {
+        if (system.humidity < system.minLimit) {
+          if (!system.pumpActive) {
+            system.pumpActive = true;
+            addLog(`Umidade (${system.humidity}%) abaixo do mínimo (${system.minLimit}%). Irrigação ativada.`);
+          }
+        } else if (system.humidity >= system.maxLimit) {
+          if (system.pumpActive) {
+            system.pumpActive = false;
+            addLog(`Umidade (${system.humidity}%) atingiu o limite máximo (${system.maxLimit}%). Irrigação desligada.`);
+          }
+        }
+      }
+
+      updateUI();
+    }
+
+    function updateUI() {
+      document.getElementById('disp-humidity').innerText = system.humidity + "%";
+      document.getElementById('disp-range-text').innerText = `${system.minLimit}%–${system.maxLimit}%`;
+      document.getElementById('lbl-min').innerText = `${system.minLimit}% (Mín)`;
+      document.getElementById('lbl-max').innerText = `${system.maxLimit}% (Máx)`;
+      
+      const highlight = document.getElementById('range-highlight');
+      highlight.style.left = system.minLimit + "%";
+      highlight.style.width = (system.maxLimit - system.minLimit) + "%";
+
+      const badge = document.getElementById('disp-status-badge');
+      const svgIcon = document.getElementById('humidity-svg');
+
+      if (system.humidity >= 85) {
+        badge.className = "status-check flooded";
+        badge.innerHTML = "<span>⚠ ALERTA: Solo Encharcado / Alagado!</span>";
+        document.getElementById('disp-humidity').style.color = "#dc2626";
+        svgIcon.style.fill = "#dc2626";
+      } else if (system.humidity < system.minLimit) {
+        badge.className = "status-check low";
+        badge.innerHTML = "<span>Solo Seco - Necessita irrigação</span>";
+        document.getElementById('disp-humidity').style.color = "#d97706";
+        svgIcon.style.fill = "#d97706";
+      } else if (system.humidity >= system.minLimit && system.humidity <= system.maxLimit) {
+        badge.className = "status-check ok";
+        badge.innerHTML = "<span>✓ Umidade adequada</span>";
+        document.getElementById('disp-humidity').style.color = "#1a56db";
+        svgIcon.style.fill = "#2563eb";
+      } else {
+        badge.className = "status-check ok";
+        badge.innerHTML = "<span>Umidade suficiente</span>";
+        document.getElementById('disp-humidity').style.color = "#2563eb";
+        svgIcon.style.fill = "#2563eb";
+      }
+
+      const waterText = document.getElementById('disp-water-text');
+      const waterSubtext = document.getElementById('disp-water-subtext');
+      const waterLevelSvg = document.getElementById('res-water-level');
+
+      if (system.hasWater) {
+        waterText.innerText = "Com água";
+        waterText.className = "status-text-green";
+        waterSubtext.innerText = "Disponível";
+        waterLevelSvg.setAttribute("fill", "#3b82f6");
+        waterLevelSvg.setAttribute("opacity", "0.8");
+      } else {
+        waterText.innerText = "Sem água";
+        waterText.className = "status-text-red";
+        waterSubtext.innerText = "⚠ Bloqueio Ativo";
+        waterLevelSvg.setAttribute("fill", "#cbd5e1");
+        waterLevelSvg.setAttribute("opacity", "0.2");
+      }
+
+      const pumpText = document.getElementById('disp-pump-text');
+      const pumpSubtext = document.getElementById('disp-pump-subtext');
+      const pumpBody = document.getElementById('pump-body');
+
+      if (system.pumpActive) {
+        pumpText.innerText = "LIGADA";
+        pumpText.className = "status-text-blue";
+        pumpSubtext.innerText = "Irrigando solo...";
+        pumpBody.setAttribute("fill", "#2563eb");
+      } else {
+        pumpText.innerText = "Desligada";
+        pumpText.className = "status-text-red";
+        pumpSubtext.innerText = system.isEmergency ? "Emergência / Parada" : "Aguardando";
+        pumpBody.setAttribute("fill", "#94a3b8");
+      }
+
+      const alertBox = document.getElementById('active-alert-status');
+      if (!system.hasWater) {
+        alertBox.className = "alert-item danger";
+        alertBox.innerText = "⚠ ALERTA ATIVO: Falta de água no reservatório. Irrigação bloqueada.";
+      } else if (system.humidity >= 85) {
+        alertBox.className = "alert-item danger";
+        alertBox.innerText = "⚠ ALERTA ATIVO: Solo Encharcado (Umidade > 85%). Risco de sufocamento radicular.";
+      } else {
+        alertBox.className = "alert-item";
+        alertBox.style.color = "#10b981";
+        alertBox.innerText = "✓ Nenhum alerta crítico ativo. Sistema operando normalmente.";
+      }
+    }
+
+    function addLog(msg) {
+      const history = document.getElementById('history-list');
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const item = document.createElement('div');
+      item.className = 'log-item';
+      item.innerHTML = `<strong>${time}</strong> - ${msg}`;
+      history.insertBefore(item, history.firstChild);
+    }
+
+    evaluateSystemState();
+  </script>
+</body>
+</html>
