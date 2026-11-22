@@ -146,6 +146,6 @@ Crie o arquivo `secrets.h` (não versione esse arquivo):
 
 ## 👩‍🎓 Autoria e Orientação
 
-* **Autoria:** `Victor Rodrigo da Silva Nascimento` `e Maria Heloiza Costa de Souza`
+* **Autoria:** `Victor Rodrigo da Silva Nascimento` e ` Maria Heloiza Costa de Souza`
 * **Orientação:** Prof.ª MBA Luana Leal
 * **Instituição:** Centro Universitário Fametro — Manaus/AM (2026)
